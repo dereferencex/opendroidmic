@@ -1,0 +1,11 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name>OpenDroidMic</name>
+  <service>
+    <type>_opendroidmic._udp</type>
+    <port>38471</port>
+    <txt-record>version=1</txt-record>
+    <txt-record>protocol=odmc</txt-record>
+  </service>
+</service-group>

@@ -1,0 +1,32 @@
+[package]
+name = "opendroidmic"
+version = "0.1.0"
+edition = "2024"
+description = "Turn your Android phone into a low-latency microphone for Linux"
+default-run = "opendroidmic"
+
+[lib]
+name = "opendroidmic"
+path = "src/lib.rs"
+
+[[bin]]
+name = "opendroidmic"
+path = "src/main.rs"
+
+[[bin]]
+name = "opendroidmic-test-sender"
+path = "src/test_sender.rs"
+
+[dependencies]
+pipewire = "0.10"
+clap = { version = "4", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+ctrlc = "3"
+bytemuck = { version = "1", features = ["derive"] }
+opus = "0.3"
+rand = "0.8"
+parking_lot = "0.12"
+qrcode = "0.14"
+libmdns = "0.10"

@@ -1,0 +1,26 @@
+# Rust
+**/target/
+**/*.rs.bk
+
+# Android
+*.apk
+*.aab
+local.properties
+**/.gradle/
+**/build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Signing
+*.keystore
+*.jks
+release.keystore
