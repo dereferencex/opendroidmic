@@ -103,12 +103,17 @@ Find your PC's IP: `ip addr show | grep "inet "`
 - **Opus codec** — 32kbps, 48kHz mono, excellent quality at low bitrate
 - **PipeWire virtual mic** — appears as a real microphone in all Linux apps
 - **Adaptive jitter buffer** — auto-tunes 1-5 frames based on network conditions
-- **Auto-reconnect** — exponential backoff (500ms → 8s), up to 10 attempts
+- **Auto-reconnect** — retries with exponential backoff (500ms → 8s) until stopped
 - **Keepalive** — PING/PONG every 5s, detects dead connections in 15s
 - **mDNS discovery** — auto-finds receiver on local network (Avahi/Zeroconf)
 - **QR code pairing** — run `./opendroidmic --qr`, scan from phone
 - **Background streaming** — foreground service, notification shows connection status
 - **Last-used memory** — remembers host/port between sessions
+- **Auto-connect** — optionally starts streaming when the app opens and offers a reconnect notification after Android reboots. On Android 14+, tap the notification before microphone capture can begin.
+
+### Automatic connection
+
+Enable **Auto-connect when opened** in the Android app. The app saves the last host and port and reconnects whenever you open it. If Android restarts, OpenDroidMic posts a notification after the device is unlocked; tap **Connect** to resume streaming. Android restricts microphone foreground services during boot, so the app cannot start recording silently in the background. Allow notification permission for the reboot prompt to appear.
 
 ## CLI Options
 

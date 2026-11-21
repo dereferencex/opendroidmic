@@ -35,7 +35,6 @@ class AudioStreamService : Service() {
         private const val HELLO_ACK_TIMEOUT_MS = 3000L
         private const val PING_INTERVAL_MS = 5000L
         private const val PONG_TIMEOUT_MS = 5000L
-        const val MAX_RECONNECT_ATTEMPTS = 10
         private const val BASE_RECONNECT_DELAY_MS = 500L
         private const val MAX_RECONNECT_DELAY_MS = 8000L
     }
@@ -135,12 +134,6 @@ class AudioStreamService : Service() {
             if (!isStreaming.get()) break
 
             val attempt = reconnectAttempts.incrementAndGet()
-            if (attempt > MAX_RECONNECT_ATTEMPTS) {
-                Log.e(TAG, "Max reconnect attempts reached")
-                connectionState.set(State.ERROR)
-                isStreaming.set(false)
-                break
-            }
 
             connectionState.set(State.RECONNECTING)
             val delay = (BASE_RECONNECT_DELAY_MS * (1L shl (attempt - 1).coerceAtMost(4)))
