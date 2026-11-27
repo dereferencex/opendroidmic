@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.view.View
+import android.widget.CheckBox
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -26,10 +27,16 @@ class MainActivity : AppCompatActivity() {
         private const val PERM_RECORD_AUDIO = 100
         private const val PERM_CAMERA = 101
         private const val PERM_DISCOVERY = 102
+        private const val PERM_NOTIFICATIONS = 103
         private const val UI_UPDATE_INTERVAL = 100L
-        private const val PREFS_NAME = "opendroidmic"
-        private const val KEY_HOST = "last_host"
-        private const val KEY_PORT = "last_port"
+        const val PREFS_NAME = "opendroidmic_autostart"
+        const val KEY_HOST = "last_host"
+        const val KEY_PORT = "last_port"
+        const val KEY_AUTO_CONNECT = "auto_connect"
+        const val KEY_NOTIFICATION_PROMPTED = "notification_prompted"
+        const val EXTRA_AUTO_CONNECT = "com.opendroidmic.extra.AUTO_CONNECT"
+        private const val DEFAULT_HOST = "100.118.49.79"
+        private const val DEFAULT_PORT = 38471
     }
 
     private lateinit var editHost: com.google.android.material.textfield.TextInputEditText
@@ -43,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textReconnect: TextView
     private lateinit var btnDiscover: MaterialButton
     private lateinit var btnScanQr: MaterialButton
+    private lateinit var checkAutoConnect: CheckBox
     private lateinit var textDiscovery: TextView
 
     private var service: AudioStreamService? = null
@@ -51,6 +59,8 @@ class MainActivity : AppCompatActivity() {
     private var discoveryManager: DiscoveryManager? = null
     private var discovering = false
     private var pendingAction: (() -> Unit)? = null
+    private var autoConnectPending = false
+    private var notificationPromptPending = false
 
     private val qrScanLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -75,6 +85,7 @@ class MainActivity : AppCompatActivity() {
             bound = true
             updateUi()
             startUiUpdates()
+            maybeAutoConnect()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -141,6 +152,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         handleStopIntent(intent)
+        autoConnectPending = intent?.getBooleanExtra(EXTRA_AUTO_CONNECT, false) == true
 
         editHost = findViewById(R.id.editHost)
         editPort = findViewById(R.id.editPort)
@@ -153,18 +165,24 @@ class MainActivity : AppCompatActivity() {
         textReconnect = findViewById(R.id.textReconnect)
         btnDiscover = findViewById(R.id.btnDiscover)
         btnScanQr = findViewById(R.id.btnScanQr)
+        checkAutoConnect = findViewById(R.id.checkAutoConnect)
         textDiscovery = findViewById(R.id.textDiscovery)
 
         discoveryManager = DiscoveryManager(this)
 
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val savedHost = prefs.getString(KEY_HOST, "")
-        val savedPort = prefs.getInt(KEY_PORT, 0)
-        if (!savedHost.isNullOrEmpty()) {
-            editHost.setText(savedHost)
+        val savedHost = prefs.getString(KEY_HOST, DEFAULT_HOST)
+        val savedPort = prefs.getInt(KEY_PORT, DEFAULT_PORT)
+        editHost.setText(savedHost ?: DEFAULT_HOST)
+        editPort.setText(savedPort.toString())
+        checkAutoConnect.isChecked = prefs.getBoolean(KEY_AUTO_CONNECT, true)
+        if (!autoConnectPending && checkAutoConnect.isChecked) {
+            autoConnectPending = true
         }
-        if (savedPort > 0) {
-            editPort.setText(savedPort.toString())
+        maybeRequestNotificationPermission(prefs)
+        checkAutoConnect.setOnCheckedChangeListener { _, enabled ->
+            prefs.edit().putBoolean(KEY_AUTO_CONNECT, enabled).apply()
+            if (enabled) maybeRequestNotificationPermission(prefs)
         }
 
         btnStartStop.setOnClickListener {
@@ -282,6 +300,27 @@ class MainActivity : AppCompatActivity() {
         updateUi()
     }
 
+    private fun maybeAutoConnect() {
+        if (!autoConnectPending || notificationPromptPending || !bound || service?.isStreaming?.get() == true) return
+        autoConnectPending = false
+        startStreaming()
+    }
+
+    private fun maybeRequestNotificationPermission(prefs: android.content.SharedPreferences) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED ||
+            prefs.getBoolean(KEY_NOTIFICATION_PROMPTED, false)
+        ) return
+
+        prefs.edit().putBoolean(KEY_NOTIFICATION_PROMPTED, true).apply()
+        notificationPromptPending = true
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            PERM_NOTIFICATIONS
+        )
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
@@ -314,6 +353,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                 }
+            }
+            PERM_NOTIFICATIONS -> {
+                notificationPromptPending = false
+                if (!granted) {
+                    Toast.makeText(this, "Allow notifications to get the post-reboot start prompt", Toast.LENGTH_LONG).show()
+                }
+                maybeAutoConnect()
             }
         }
         pendingAction = null
@@ -414,7 +460,7 @@ class MainActivity : AppCompatActivity() {
         val reconnectAttempt = svc.reconnectAttempts.get()
         if (state == AudioStreamService.State.RECONNECTING && reconnectAttempt > 0) {
             textReconnect.visibility = TextView.VISIBLE
-            textReconnect.text = "Attempt $reconnectAttempt / ${AudioStreamService.MAX_RECONNECT_ATTEMPTS}"
+            textReconnect.text = "Retrying (attempt $reconnectAttempt)"
         } else if (state == AudioStreamService.State.ERROR) {
             textReconnect.visibility = TextView.VISIBLE
             textReconnect.text = "Check that the Linux receiver is running on the correct port"
@@ -434,7 +480,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleStopIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_AUTO_CONNECT, false)) {
+            autoConnectPending = true
+            maybeAutoConnect()
+        }
     }
 
     private fun handleStopIntent(intent: Intent?) {

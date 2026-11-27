@@ -203,6 +203,15 @@
                         android:text="38471" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <CheckBox
+                    android:id="@+id/checkAutoConnect"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:checked="true"
+                    android:text="Auto-connect when opened; show a start prompt after reboot"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <!-- Discovery Buttons -->
                 <LinearLayout
                     android:layout_width="match_parent"
