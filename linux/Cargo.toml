@@ -1,6 +1,6 @@
 [package]
 name = "opendroidmic"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Turn your Android phone into a low-latency microphone for Linux"
 default-run = "opendroidmic"

@@ -71,7 +71,7 @@ Binary at: `target/release/opendroidmic`
 
 You should see:
 ```
-OpenDroidMic v0.1.0
+OpenDroidMic v0.2.0
 PipeWire virtual source started: 48000 Hz, 1 ch, 960 samples/frame
 Listening for Android connections on port 38471...
 ```
