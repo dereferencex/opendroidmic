@@ -97,16 +97,16 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 Find your PC's IP: `ip addr show | grep "inet "`
 
-## Changes in this fork compared with the original
 
-The `feature/auto-connect-and-boot-prompt` branch and [pull request #1](https://github.com/dereferencex/opendroidmic/pull/1) add these Android-side changes:
+## Recent contributions
 
-- **Connect automatically on app launch:** enabled by default, with a setting to turn it off. The app uses the saved receiver address and port.
-- **Reconnect without a fixed attempt limit:** retries continue with exponential backoff (500 ms to 8 s) until streaming is stopped. The original app stops after 10 failed attempts.
-- **Offer reconnection after a reboot:** after Android boots and the device is unlocked, the app posts a notification. Tapping **Connect** opens the app and starts streaming. Android does not allow this microphone foreground service to start silently from the boot receiver.
-- **Request notification permission:** needed on Android 13 and later for the reboot notification.
+The following Android improvements were contributed by [@vicenteserna](https://github.com/vicenteserna) in [PR #1](https://github.com/dereferencex/opendroidmic/pull/1):
 
-The locally built test APK uses application ID `com.opendroidmic.autostart` so it can be installed alongside the original app. The proposed source changes keep the original application ID, so an accepted upstream update would upgrade the existing app normally.
+- **Automatic connection:** Connects automatically when the app launches, enabled by default, with an option to disable it. Uses the saved receiver address and port.
+- **Improved reconnection:** Retries indefinitely with exponential backoff (500 ms to 8 seconds) until streaming is stopped.
+- **Reconnection after reboot:** Displays a notification after Android boots and the device is unlocked. Tapping **Connect** opens the app and starts streaming. Android restricts microphone foreground service startup during boot, so streaming cannot start silently.
+- **Notification permission:** Requests notification permission on Android 13 and later for the reboot notification.
+
 
 ## Features
 
